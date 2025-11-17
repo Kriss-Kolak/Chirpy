@@ -19,12 +19,7 @@ func (cfg *apiConfig) ServeMetrics(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte(response_text))
 }
 
-func (cfg *apiConfig) ResetMetrics(res http.ResponseWriter, req *http.Request) {
-	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	res.WriteHeader(http.StatusOK)
-	cfg.fileserverHits.Store(0)
-	res.Write([]byte("OK"))
-}
+
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
