@@ -16,6 +16,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	dbqueries      *database.Queries
 	platform       string
+	secretToken    string
 }
 
 func main() {
@@ -29,14 +30,16 @@ func main() {
 		return
 	}
 	apiCfg := apiConfig{
-		dbqueries: database.New(db),
-		platform:  os.Getenv("PLATFORM")}
+		dbqueries:   database.New(db),
+		platform:    os.Getenv("PLATFORM"),
+		secretToken: os.Getenv("SECRET_TOKEN")}
 
 	NewServeMux := http.NewServeMux()
 
 	NewServeMux.HandleFunc("GET /api/healthz", ServeReadiness)
 	NewServeMux.HandleFunc("POST /api/chirps", apiCfg.CreateChirp)
 	NewServeMux.HandleFunc("POST /api/users", apiCfg.AddUser)
+	NewServeMux.HandleFunc("POST /api/login", apiCfg.Login)
 	NewServeMux.HandleFunc("GET /api/chirps", apiCfg.GetAllChirps)
 	NewServeMux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.GetChirpWithId)
 

@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	internal "github.com/Kriss-Kolak/Chirpy/internal/auth"
+	"github.com/Kriss-Kolak/Chirpy/internal/database"
 )
 
 func (cfg *apiConfig) AddUser(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	type parameters struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	type returnVals struct {
@@ -27,7 +31,15 @@ func (cfg *apiConfig) AddUser(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	user, err := cfg.dbqueries.CreateUser(req.Context(), params.Email)
+	hashed, err := internal.HashPassword(params.Password)
+	if err != nil {
+		respondWithError(res, 400, "Error during hashing password")
+		return
+	}
+
+	user, err := cfg.dbqueries.CreateUser(req.Context(), database.CreateUserParams{
+		Email:          params.Email,
+		HashedPassword: hashed})
 	if err != nil {
 		respondWithError(res, 400, "Error during user creation")
 		return

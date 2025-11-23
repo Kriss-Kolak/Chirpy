@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Kriss-Kolak/Chirpy/internal/auth"
 	"github.com/Kriss-Kolak/Chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -17,8 +18,7 @@ func (cfg *apiConfig) CreateChirp(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	type parameters struct {
-		Body   string        `json:"body"`
-		UserID uuid.NullUUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 
 	type returnVals struct {
@@ -29,9 +29,23 @@ func (cfg *apiConfig) CreateChirp(res http.ResponseWriter, req *http.Request) {
 		UserId    string `json:"user_id"`
 	}
 
+	userToken, err := auth.GetBearerToken(req.Header)
+	if err != nil {
+		log.Printf("Error getting user token: %s", err)
+		respondWithError(res, 401, "Unauthorized")
+		return
+	}
+
+	userID, err := auth.ValidateJWT(userToken, cfg.secretToken)
+	if err != nil {
+		log.Printf("Error during token validation: %s", err)
+		respondWithError(res, 401, "Unauthorized")
+		return
+	}
+
 	decoder := json.NewDecoder(req.Body)
 	params := parameters{}
-	err := decoder.Decode(&params)
+	err = decoder.Decode(&params)
 	if err != nil {
 		log.Printf("Error decoding parameters: %s", err)
 		respondWithError(res, 500, "Something went wrong")
@@ -54,7 +68,7 @@ func (cfg *apiConfig) CreateChirp(res http.ResponseWriter, req *http.Request) {
 	result := strings.Join(filtered, " ")
 	post, err := cfg.dbqueries.CreateChirp(req.Context(), database.CreateChirpParams{
 		Body:   result,
-		UserID: params.UserID,
+		UserID: uuid.NullUUID{UUID: userID, Valid: true},
 	})
 	if err != nil {
 		respondWithError(res, 400, "Failue to create post")
