@@ -7,7 +7,35 @@ package database
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
+
+const changeUserPasswordEmail = `-- name: ChangeUserPasswordEmail :one
+UPDATE users
+SET email = $1, hashed_password = $2
+WHERE id = $3
+RETURNING id, created_at, updated_at, email, hashed_password
+`
+
+type ChangeUserPasswordEmailParams struct {
+	Email          string    `json:"email"`
+	HashedPassword string    `json:"-"`
+	ID             uuid.UUID `json:"id"`
+}
+
+func (q *Queries) ChangeUserPasswordEmail(ctx context.Context, arg ChangeUserPasswordEmailParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, changeUserPasswordEmail, arg.Email, arg.HashedPassword, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Email,
+		&i.HashedPassword,
+	)
+	return i, err
+}
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, created_at, updated_at, email, hashed_password)

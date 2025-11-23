@@ -39,8 +39,10 @@ func main() {
 	NewServeMux.HandleFunc("GET /api/healthz", ServeReadiness)
 	NewServeMux.HandleFunc("POST /api/chirps", apiCfg.CreateChirp)
 	NewServeMux.HandleFunc("POST /api/users", apiCfg.AddUser)
+	NewServeMux.HandleFunc("PUT /api/users", apiCfg.UpdateUserData)
 	NewServeMux.HandleFunc("POST /api/login", apiCfg.Login)
 	NewServeMux.HandleFunc("POST /api/revoke", apiCfg.InvokeRefreshToken)
+	NewServeMux.HandleFunc("POST /api/refresh", apiCfg.RefreshToken)
 	NewServeMux.HandleFunc("GET /api/chirps", apiCfg.GetAllChirps)
 	NewServeMux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.GetChirpWithId)
 

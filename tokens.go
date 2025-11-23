@@ -52,4 +52,12 @@ func (cfg *apiConfig) InvokeRefreshToken(res http.ResponseWriter, req *http.Requ
 		respondWithError(res, 500, "Something went wrong")
 		return
 	}
+	err = cfg.dbqueries.UpdateRefreshTokenInvokeFromToken(req.Context(), userToken)
+	if err != nil {
+		log.Printf("user token was not created properly")
+		respondWithError(res, 500, "Something went wrong")
+		return
+	}
+	res.WriteHeader(204)
+	res.Write([]byte{})
 }
