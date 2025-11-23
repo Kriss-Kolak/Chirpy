@@ -1,10 +1,10 @@
 -- +goose Up
 CREATE TABLE refresh_tokens(
     token TEXT PRIMARY KEY,
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
-    expires_at TIMESTAMP NOT NULL,
+    expires_at TIMESTAMP NOT NULL DEFAULT (NOW() + INTERVAL '60 days'),
     revoked_at TIMESTAMP DEFAULT null
 );
 

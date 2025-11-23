@@ -40,6 +40,7 @@ func main() {
 	NewServeMux.HandleFunc("POST /api/chirps", apiCfg.CreateChirp)
 	NewServeMux.HandleFunc("POST /api/users", apiCfg.AddUser)
 	NewServeMux.HandleFunc("POST /api/login", apiCfg.Login)
+	NewServeMux.HandleFunc("POST /api/revoke", apiCfg.InvokeRefreshToken)
 	NewServeMux.HandleFunc("GET /api/chirps", apiCfg.GetAllChirps)
 	NewServeMux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.GetChirpWithId)
 

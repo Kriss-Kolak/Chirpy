@@ -6,20 +6,21 @@ import (
 	"net/http"
 	"time"
 
-	internal "github.com/Kriss-Kolak/Chirpy/internal/auth"
+	"github.com/Kriss-Kolak/Chirpy/internal/auth"
 	"github.com/Kriss-Kolak/Chirpy/internal/database"
+	"github.com/google/uuid"
 )
 
 func (cfg *apiConfig) Login(res http.ResponseWriter, req *http.Request) {
 	defer req.Body.Close()
 
 	type parameters struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	type returnVals struct {
-		Token string `json:"token"`
+		Token        string `json:"token"`
+		RefreshToken string `json:"refresh_token"`
 		database.User
 	}
 
@@ -39,7 +40,7 @@ func (cfg *apiConfig) Login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	valid, err := internal.CheckPasswordHash(params.Password, user.HashedPassword)
+	valid, err := auth.CheckPasswordHash(params.Password, user.HashedPassword)
 	if err != nil {
 		log.Printf("Error during checking password: %s", err)
 		respondWithError(res, 500, "Something went wrong ")
@@ -53,16 +54,24 @@ func (cfg *apiConfig) Login(res http.ResponseWriter, req *http.Request) {
 
 	exprirationTime := time.Duration(time.Second * 3600)
 
-	if params.ExpiresInSeconds != 0 {
-		exprirationTime = time.Duration(params.ExpiresInSeconds)
-	}
-
-	userToken, err := internal.MakeJWT(user.ID, cfg.secretToken, exprirationTime)
+	userToken, err := auth.MakeJWT(user.ID, cfg.secretToken, exprirationTime)
 	if err != nil {
+		log.Printf("error during making jwt: %v", err)
 		respondWithError(res, 500, "Something went wrong")
 		return
 	}
 
-	respondWithJson(res, 200, returnVals{User: user, Token: userToken})
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		log.Printf("error during making refresh token: %v", err)
+		respondWithError(res, 500, "Something went wrong")
+	}
+	_, err = cfg.dbqueries.CreateRefreshToken(req.Context(), database.CreateRefreshTokenParams{Token: refreshToken, UserID: uuid.NullUUID{UUID: user.ID, Valid: true}})
+	if err != nil {
+		log.Printf("error during making refresh token: %v", err)
+		respondWithError(res, 500, "Something went wrong")
+	}
+
+	respondWithJson(res, 200, returnVals{User: user, Token: userToken, RefreshToken: refreshToken})
 
 }
