@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/Kriss-Kolak/Chirpy/internal/auth"
-	internal "github.com/Kriss-Kolak/Chirpy/internal/auth"
 	"github.com/Kriss-Kolak/Chirpy/internal/database"
 )
 
@@ -19,13 +17,6 @@ func (cfg *apiConfig) AddUser(res http.ResponseWriter, req *http.Request) {
 		Password string `json:"password"`
 	}
 
-	type returnVals struct {
-		Id        string `json:"id"`
-		CreatedAt string `json:"created_at"`
-		UpdatedAt string `json:"updated_at"`
-		Email     string `json:"email"`
-	}
-
 	decoder := json.NewDecoder(req.Body)
 	params := parameters{}
 	if err := decoder.Decode(&params); err != nil {
@@ -33,7 +24,7 @@ func (cfg *apiConfig) AddUser(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	hashed, err := internal.HashPassword(params.Password)
+	hashed, err := auth.HashPassword(params.Password)
 	if err != nil {
 		respondWithError(res, 400, "Error during hashing password")
 		return
@@ -47,12 +38,7 @@ func (cfg *apiConfig) AddUser(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	respondWithJson(res, 201, returnVals{
-		Id:        user.ID.String(),
-		CreatedAt: user.CreatedAt.Format(time.RFC3339),
-		UpdatedAt: user.UpdatedAt.Format(time.RFC3339),
-		Email:     user.Email,
-	})
+	respondWithJson(res, 201, user)
 
 }
 
@@ -121,7 +107,6 @@ func (cfg *apiConfig) UpdateUserData(res http.ResponseWriter, req *http.Request)
 		respondWithError(res, 401, "Something went wrong")
 		return
 	}
-
 	respondWithJson(res, 200, updatedUser)
 
 }

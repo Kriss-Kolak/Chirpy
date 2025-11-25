@@ -24,8 +24,8 @@ RETURNING id, created_at, updated_at, body, user_id
 `
 
 type CreateChirpParams struct {
-	Body   string        `json:"body"`
-	UserID uuid.NullUUID `json:"user_id"`
+	Body   string    `json:"body"`
+	UserID uuid.UUID `json:"user_id"`
 }
 
 func (q *Queries) CreateChirp(ctx context.Context, arg CreateChirpParams) (Chirp, error) {
@@ -39,6 +39,16 @@ func (q *Queries) CreateChirp(ctx context.Context, arg CreateChirpParams) (Chirp
 		&i.UserID,
 	)
 	return i, err
+}
+
+const deleteChirpWithId = `-- name: DeleteChirpWithId :exec
+DELETE FROM chirps 
+WHERE id = $1
+`
+
+func (q *Queries) DeleteChirpWithId(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteChirpWithId, id)
+	return err
 }
 
 const getAllChirps = `-- name: GetAllChirps :many
@@ -91,4 +101,39 @@ func (q *Queries) GetChirpWithId(ctx context.Context, id uuid.UUID) (Chirp, erro
 		&i.UserID,
 	)
 	return i, err
+}
+
+const getChripsFromAuthorID = `-- name: GetChripsFromAuthorID :many
+SELECT id, created_at, updated_at, body, user_id FROM chirps
+WHERE user_id = $1
+ORDER BY created_at ASC
+`
+
+func (q *Queries) GetChripsFromAuthorID(ctx context.Context, userID uuid.UUID) ([]Chirp, error) {
+	rows, err := q.db.QueryContext(ctx, getChripsFromAuthorID, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Chirp
+	for rows.Next() {
+		var i Chirp
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Body,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

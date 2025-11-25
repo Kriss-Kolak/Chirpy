@@ -17,6 +17,7 @@ type apiConfig struct {
 	dbqueries      *database.Queries
 	platform       string
 	secretToken    string
+	polkaKey       string
 }
 
 func main() {
@@ -32,22 +33,30 @@ func main() {
 	apiCfg := apiConfig{
 		dbqueries:   database.New(db),
 		platform:    os.Getenv("PLATFORM"),
-		secretToken: os.Getenv("SECRET_TOKEN")}
+		secretToken: os.Getenv("SECRET_TOKEN"),
+		polkaKey:    os.Getenv("POLKA_KEY"),
+	}
 
 	NewServeMux := http.NewServeMux()
 
 	NewServeMux.HandleFunc("GET /api/healthz", ServeReadiness)
-	NewServeMux.HandleFunc("POST /api/chirps", apiCfg.CreateChirp)
+
 	NewServeMux.HandleFunc("POST /api/users", apiCfg.AddUser)
 	NewServeMux.HandleFunc("PUT /api/users", apiCfg.UpdateUserData)
+
 	NewServeMux.HandleFunc("POST /api/login", apiCfg.Login)
 	NewServeMux.HandleFunc("POST /api/revoke", apiCfg.InvokeRefreshToken)
 	NewServeMux.HandleFunc("POST /api/refresh", apiCfg.RefreshToken)
+
 	NewServeMux.HandleFunc("GET /api/chirps", apiCfg.GetAllChirps)
 	NewServeMux.HandleFunc("GET /api/chirps/{chirpID}", apiCfg.GetChirpWithId)
+	NewServeMux.HandleFunc("POST /api/chirps", apiCfg.CreateChirp)
+	NewServeMux.HandleFunc("DELETE /api/chirps/{chirpID}", apiCfg.DeleteChripWithId)
 
 	NewServeMux.HandleFunc("GET /admin/metrics", apiCfg.ServeMetrics)
 	NewServeMux.HandleFunc("POST /admin/reset", apiCfg.ResetUsers)
+
+	NewServeMux.HandleFunc("POST /api/polka/webhooks", apiCfg.PolkaWebhook)
 
 	NewServeMux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(root)))))
 
